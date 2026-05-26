@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 560px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      margin-bottom: 28px;
+      font-size: 0.9rem;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .input-row input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fff;
+    }
+
+    .input-row input:focus {
+      border-color: #6366f1;
+    }
+
+    .input-row button {
+      padding: 12px 20px;
+      background: #6366f1;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .input-row button:hover { background: #4f46e5; }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .filters button {
+      padding: 6px 14px;
+      border: 2px solid transparent;
+      border-radius: 20px;
+      background: #fff;
+      color: #6b7280;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filters button.active {
+      border-color: #6366f1;
+      color: #6366f1;
+      background: #eef2ff;
+    }
+
+    .filters button:hover:not(.active) { border-color: #d1d5db; }
+
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      flex: 1;
+      background: #fff;
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+
+    .stat .num { font-size: 1.6rem; font-weight: 700; color: #1a1a2e; }
+    .stat .label { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+
+    .task-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .task {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      transition: opacity 0.2s;
+    }
+
+    .task.done { opacity: 0.55; }
+
+    .task input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: #6366f1;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 1rem;
+      color: #1f2937;
+      word-break: break-word;
+    }
+
+    .task.done .task-text {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    .task-text[contenteditable="true"] {
+      outline: none;
+      border-bottom: 1px dashed #6366f1;
+    }
+
+    .task-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .task-actions button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: background 0.15s;
+      color: #6b7280;
+    }
+
+    .task-actions button:hover { background: #f3f4f6; }
+    .task-actions .del:hover { color: #ef4444; background: #fee2e2; }
+
+    .empty {
+      text-align: center;
+      color: #9ca3af;
+      padding: 40px 0;
+      font-size: 0.95rem;
+    }
+
+    .clear-btn {
+      margin-top: 18px;
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      color: #6b7280;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .clear-btn:hover { border-color: #ef4444; color: #ef4444; background: #fff5f5; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Task Manager</h1>
+    <p class="subtitle" id="date"></p>
+
+    <div class="input-row">
+      <input id="taskInput" type="text" placeholder="Add a new task…" maxlength="200" />
+      <button onclick="addTask()">Add</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num" id="statTotal">0</div><div class="label">Total</div></div>
+      <div class="stat"><div class="num" id="statPending">0</div><div class="label">Pending</div></div>
+      <div class="stat"><div class="num" id="statDone">0</div><div class="label">Done</div></div>
+    </div>
+
+    <div class="filters">
+      <button class="active" onclick="setFilter('all', this)">All</button>
+      <button onclick="setFilter('pending', this)">Pending</button>
+      <button onclick="setFilter('done', this)">Done</button>
+    </div>
+
+    <div class="task-list" id="taskList"></div>
+
+    <button class="clear-btn" onclick="clearDone()">Clear completed tasks</button>
+  </div>
+
+  <script>
+    let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+    let filter = 'all';
+
+    document.getElementById('date').textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    document.getElementById('taskInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTask();
+    });
+
+    function save() {
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function addTask() {
+      const input = document.getElementById('taskInput');
+      const text = input.value.trim();
+      if (!text) return;
+      tasks.unshift({ id: Date.now(), text, done: false });
+      input.value = '';
+      save();
+      render();
+    }
+
+    function toggleTask(id) {
+      const t = tasks.find(t => t.id === id);
+      if (t) t.done = !t.done;
+      save();
+      render();
+    }
+
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+      render();
+    }
+
+    function editTask(id, el) {
+      el.contentEditable = true;
+      el.focus();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+
+      function commit() {
+        el.contentEditable = false;
+        const t = tasks.find(t => t.id === id);
+        if (t) {
+          t.text = el.textContent.trim() || t.text;
+          el.textContent = t.text;
+          save();
+        }
+      }
+
+      el.onblur = commit;
+      el.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } };
+    }
+
+    function setFilter(f, btn) {
+      filter = f;
+      document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    function clearDone() {
+      tasks = tasks.filter(t => !t.done);
+      save();
+      render();
+    }
+
+    function render() {
+      const total = tasks.length;
+      const done = tasks.filter(t => t.done).length;
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statPending').textContent = total - done;
+      document.getElementById('statDone').textContent = done;
+
+      const visible = tasks.filter(t => {
+        if (filter === 'pending') return !t.done;
+        if (filter === 'done') return t.done;
+        return true;
+      });
+
+      const list = document.getElementById('taskList');
+      if (visible.length === 0) {
+        list.innerHTML = '<div class="empty">No tasks here yet.</div>';
+        return;
+      }
+
+      list.innerHTML = visible.map(t => `
+        <div class="task ${t.done ? 'done' : ''}">
+          <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})" />
+          <span class="task-text" ondblclick="editTask(${t.id}, this)">${escHtml(t.text)}</span>
+          <div class="task-actions">
+            <button title="Edit" onclick="editTask(${t.id}, this.closest('.task').querySelector('.task-text'))">✏️</button>
+            <button class="del" title="Delete" onclick="deleteTask(${t.id})">🗑️</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    render();
+  </script>
+</body>
+</html>
